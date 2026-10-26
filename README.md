@@ -13,7 +13,6 @@ Deskwoot nodes for n8n. Start a workflow when something happens in Deskwoot, and
 * [Without the Enterprise plan: webhooks](#without-the-enterprise-plan-webhooks)
 * [Compatibility](#compatibility)
 * [Development](#development)
-* [Publishing (not done yet)](#publishing-not-done-yet)
 * [Resources](#resources)
 
 ## What you need
@@ -120,10 +119,6 @@ npm run build   # compiles to dist
 npm run lint    # n8n's lint rules for community nodes
 npm test        # every HTTP call in the tests is a fake
 ```
-
-## Publishing (not done yet)
-
-This package is not on npm yet. Publishing needs Deskwoot's npm account, a public GitHub repository named in the `repository` field of package.json, and a release through the GitHub Action in `.github/workflows/publish.yml`, which adds npm provenance. n8n Cloud offers the node only after n8n has verified it through its Creator Portal. The Deskwoot team keeps the exact steps in PUBLISH.md, which stays out of git.
 
 ## Resources
 

@@ -4,6 +4,10 @@
 	"description": "Deskwoot triggers and actions for n8n: start workflows from conversations, messages and contacts, and reply, assign and update contacts in Deskwoot.",
 	"license": "MIT",
 	"homepage": "https://help.deskwoot.com/n8n-integration",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Deskwoot/n8n-nodes-deskwoot.git"
+	},
 	"keywords": [
 		"n8n-community-node-package"
 	],
