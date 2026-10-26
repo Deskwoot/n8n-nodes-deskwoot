@@ -8,6 +8,9 @@
 		"type": "git",
 		"url": "git+https://github.com/Deskwoot/n8n-nodes-deskwoot.git"
 	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"keywords": [
 		"n8n-community-node-package"
 	],
