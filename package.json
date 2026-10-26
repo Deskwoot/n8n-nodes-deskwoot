@@ -1,0 +1,50 @@
+{
+	"name": "n8n-nodes-deskwoot",
+	"version": "0.1.0",
+	"description": "Deskwoot triggers and actions for n8n: start workflows from conversations, messages and contacts, and reply, assign and update contacts in Deskwoot.",
+	"license": "MIT",
+	"homepage": "https://help.deskwoot.com/n8n-integration",
+	"keywords": [
+		"n8n-community-node-package"
+	],
+	"author": {
+		"name": "Deskwoot",
+		"email": "hello@deskwoot.com"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run --maxWorkers=4",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/DeskwootApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Deskwoot/Deskwoot.node.js",
+			"dist/nodes/DeskwootTrigger/DeskwootTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.53.4",
+		"eslint": "9.32.0",
+		"n8n-workflow": "2.44.2",
+		"prettier": "3.6.2",
+		"release-it": "^21.1.0",
+		"typescript": "5.9.2",
+		"vitest": "5.0.5"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
