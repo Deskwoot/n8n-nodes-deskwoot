@@ -171,10 +171,13 @@ async function createOrUpdateContact(this: IExecuteFunctions, i: number): Promis
 		email,
 		...fields,
 	});
-	// Created by someone else in the meantime: Deskwoot names it.
+	// Created by someone else in the meantime: Deskwoot names it. Only a 409
+	// without a code is about this email. One with a code, such as
+	// identifier_taken, names a different contact, which must stay untouched.
 	if (created.statusCode === 409) {
-		const existingId = asObject(created.body).contactId;
-		if (typeof existingId === 'string' && existingId) {
+		const conflict = asObject(created.body);
+		const existingId = conflict.contactId;
+		if (conflict.code === undefined && typeof existingId === 'string' && existingId) {
 			return hasFields ? update(existingId) : { id: existingId, email };
 		}
 	}

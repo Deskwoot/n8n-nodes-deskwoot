@@ -125,7 +125,7 @@ export function deskwootError(
 	});
 }
 
-const isSuccess = (statusCode: number) => statusCode >= 200 && statusCode < 300;
+export const isSuccess = (statusCode: number) => statusCode >= 200 && statusCode < 300;
 
 /** One call to the REST API: the body of a 2xx answer, or an error n8n shows. */
 export async function deskwootRequest(

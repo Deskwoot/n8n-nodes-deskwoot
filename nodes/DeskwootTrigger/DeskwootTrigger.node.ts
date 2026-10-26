@@ -9,7 +9,13 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { accountPath, deskwootRequest } from '../Deskwoot/shared/transport';
+import type { DeskwootResponse } from '../Deskwoot/shared/transport';
+import {
+	accountPath,
+	deskwootRequest,
+	deskwootRequestFull,
+	isSuccess,
+} from '../Deskwoot/shared/transport';
 
 /**
  * The Deskwoot triggers, all REST hooks: publishing the workflow subscribes
@@ -69,6 +75,13 @@ export class DeskwootTrigger implements INodeType {
 			},
 		],
 		properties: [
+			{
+				displayName:
+					'Deskwoot sends events only to an n8n it can reach from the internet over HTTPS. The trigger also needs a workspace on the Enterprise plan and an API token that an administrator created.',
+				name: 'notice',
+				type: 'notice',
+				default: '',
+			},
 			{
 				displayName: 'Event',
 				name: 'event',
@@ -158,24 +171,31 @@ export class DeskwootTrigger implements INodeType {
 				const data = hookData(this);
 				const { hookId } = data;
 				if (typeof hookId !== 'string' || !hookId) return true;
-				let removed = true;
+				let response: DeskwootResponse;
 				try {
-					// A hook that is gone already answers 200 { deleted: false }.
-					await deskwootRequest(
+					response = await deskwootRequestFull(
 						this,
 						'DELETE',
 						await accountPath(this, `/rest-hooks/${encodeURIComponent(hookId)}`),
 					);
 				} catch (error) {
-					this.logger.warn('Could not remove the Deskwoot trigger subscription', {
+					// Deskwoot may still have the hook: keep it, so the next publish uses it again.
+					this.logger.warn('Could not reach Deskwoot to remove the trigger subscription', {
 						message: (error as Error).message,
 					});
-					removed = false;
+					return false;
 				}
-				// The next publish subscribes again with a new secret either way.
+				// A hook that is gone already answers 200 { deleted: false }. A 401 means
+				// the token was revoked, and revoking a token removes its hooks.
+				if (!isSuccess(response.statusCode) && response.statusCode !== 401) {
+					this.logger.warn('Deskwoot did not remove the trigger subscription', {
+						statusCode: response.statusCode,
+					});
+					return false;
+				}
 				delete data.hookId;
 				delete data.secret;
-				return removed;
+				return true;
 			},
 		},
 	};

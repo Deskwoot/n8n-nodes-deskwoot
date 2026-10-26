@@ -276,6 +276,35 @@ describe('Contact: Create or Update', () => {
 		expect(api.calls).toHaveLength(2);
 	});
 
+	it('leaves a different contact alone when its identifier is in the way', async () => {
+		// The contact made with this email later got another email, but kept
+		// this one as its identifier.
+		const api = fakeApi({
+			'GET /accounts/acc_1/contacts': search([]),
+			'POST /accounts/acc_1/contacts': {
+				statusCode: 409,
+				body: {
+					error: 'Another contact in this account already has that identifier.',
+					code: 'identifier_taken',
+					contactId: 'c7',
+				},
+			},
+		});
+		const error = await run(
+			api,
+			contact('createOrUpdate', {
+				email: 'a@example.com',
+				additionalFields: { name: 'Bob' },
+			}),
+		).catch((e: unknown) => e);
+		expect(error).toBeInstanceOf(NodeApiError);
+		expect((error as NodeApiError).message).toBe(
+			'Another contact in this account already has that identifier.',
+		);
+		expect((error as NodeApiError).description).toBe('Deskwoot error code: identifier_taken');
+		expect(api.calls.map((c) => c.method)).toEqual(['GET', 'POST']);
+	});
+
 	it("fails with Deskwoot's text when the contact cannot be created", async () => {
 		const api = fakeApi({
 			'GET /accounts/acc_1/contacts': search([]),

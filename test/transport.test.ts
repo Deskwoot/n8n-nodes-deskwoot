@@ -101,6 +101,19 @@ describe('deskwootRequest', () => {
 		expect((error as NodeApiError).context.itemIndex).toBe(2);
 	});
 
+	it("passes on Deskwoot's text for a 429, so the person knows to slow down", async () => {
+		const api = fakeApi({
+			'GET /me': {
+				statusCode: 429,
+				body: { error: 'Too many requests. Please try again later.' },
+			},
+		});
+		const error = await deskwootRequest(ctxWith(api), 'GET', '/me').catch((e: unknown) => e);
+		expect(error).toBeInstanceOf(NodeApiError);
+		expect((error as NodeApiError).message).toBe('Too many requests. Please try again later.');
+		expect((error as NodeApiError).httpCode).toBe('429');
+	});
+
 	it('names the status when the answer has no error text', async () => {
 		const api = fakeApi({ 'GET /me': { statusCode: 502, body: '<html>Bad gateway</html>' } });
 		const error = await deskwootRequest(ctxWith(api), 'GET', '/me').catch((e: unknown) => e);

@@ -27,6 +27,13 @@ describe('Deskwoot Trigger description', () => {
 		expect(node.description.webhooks?.[0]).toMatchObject({ name: 'default', httpMethod: 'POST' });
 	});
 
+	it('says up front what the trigger needs', () => {
+		const notice = node.description.properties.find((p) => p.type === 'notice');
+		expect(notice?.displayName).toContain('HTTPS');
+		expect(notice?.displayName).toContain('Enterprise plan');
+		expect(notice?.displayName).toContain('administrator');
+	});
+
 	it("offers exactly Deskwoot's 6 REST hook triggers", () => {
 		const event = node.description.properties.find((p) => p.name === 'event');
 		const values = (event?.options as INodePropertyOptions[]).map((o) => o.value).sort();
@@ -123,7 +130,7 @@ describe('unsubscribing', () => {
 		expect(api.calls).toHaveLength(0);
 	});
 
-	it('logs a failed removal without the secret and forgets the hook', async () => {
+	it('logs a removal without any answer, without the secret, and keeps the hook', async () => {
 		const api = fakeApi({ 'DELETE /accounts/acc_1/rest-hooks/h1': new Error('socket hang up') });
 		const staticData: IDataObject = { hookId: 'h1', secret: SIGNING_KEY };
 		const { ctx, logger } = hookContext({ api, staticData, webhookUrl: PRODUCTION_URL });
@@ -131,6 +138,34 @@ describe('unsubscribing', () => {
 		expect(await hooks.delete.call(ctx)).toBe(false);
 		expect(logger.warn).toHaveBeenCalledTimes(1);
 		expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(SIGNING_KEY);
+		expect(staticData).toEqual({ hookId: 'h1', secret: SIGNING_KEY });
+		// The next publish uses the hook Deskwoot still has.
+		expect(await hooks.checkExists.call(ctx)).toBe(true);
+	});
+
+	it.each([403, 500])('keeps the hook when Deskwoot answers %i', async (statusCode) => {
+		const api = fakeApi({
+			'DELETE /accounts/acc_1/rest-hooks/h1': {
+				statusCode,
+				body: { error: 'API access requires an Enterprise plan.' },
+			},
+		});
+		const staticData: IDataObject = { hookId: 'h1', secret: SIGNING_KEY };
+		const { ctx, logger } = hookContext({ api, staticData, webhookUrl: PRODUCTION_URL });
+
+		expect(await hooks.delete.call(ctx)).toBe(false);
+		expect(logger.warn).toHaveBeenCalledTimes(1);
+		expect(staticData).toEqual({ hookId: 'h1', secret: SIGNING_KEY });
+	});
+
+	it('forgets the hook after a 401, since revoking the token removed it', async () => {
+		const api = fakeApi({
+			'DELETE /accounts/acc_1/rest-hooks/h1': { statusCode: 401, body: { error: 'Unauthorized' } },
+		});
+		const staticData: IDataObject = { hookId: 'h1', secret: SIGNING_KEY };
+		const { ctx } = hookContext({ api, staticData, webhookUrl: PRODUCTION_URL });
+
+		expect(await hooks.delete.call(ctx)).toBe(true);
 		expect(staticData).toEqual({});
 	});
 });
@@ -153,6 +188,28 @@ describe('receiving', () => {
 		});
 		expect(await node.webhook.call(ctx)).toEqual({ workflowData: [[{ json: event }]] });
 		expect(response.statusCode).toBe(0);
+	});
+
+	it('signs the raw bytes, so a body with umlauts and an emoji passes', async () => {
+		const umlauts = {
+			id: 'cv2',
+			trigger: 'message.incoming',
+			content: 'Grüße aus Köln, die Bestellung ist noch nicht da 😕',
+		};
+		// The bytes as Deskwoot sends them: UTF-8, more bytes than characters.
+		const bytes = Buffer.from(JSON.stringify(umlauts), 'utf8');
+		expect(bytes.length).toBeGreaterThan(JSON.stringify(umlauts).length);
+		const { ctx, response } = webhookContext({
+			staticData: stored(),
+			rawBody: bytes,
+			headers: { 'x-deskwoot-signature': sign(bytes, SIGNING_KEY) },
+			body: umlauts,
+		});
+		expect(await node.webhook.call(ctx)).toEqual({ workflowData: [[{ json: umlauts }]] });
+		expect(response.statusCode).toBe(0);
+		// Signed over the same text read as Latin-1, the signature no longer matches.
+		const latin1 = Buffer.from(JSON.stringify(umlauts), 'latin1');
+		expect(isValidSignature(latin1, sign(bytes, SIGNING_KEY), SIGNING_KEY)).toBe(false);
 	});
 
 	it('reads the raw body when n8n has not read it yet', async () => {

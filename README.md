@@ -9,9 +9,11 @@ Deskwoot nodes for n8n. Start a workflow when something happens in Deskwoot, and
 * [Credentials](#credentials)
 * [Deskwoot Trigger](#deskwoot-trigger)
 * [Deskwoot node](#deskwoot-node)
+* [Example workflow](#example-workflow)
 * [Without the Enterprise plan: webhooks](#without-the-enterprise-plan-webhooks)
 * [Compatibility](#compatibility)
 * [Development](#development)
+* [Publishing (not done yet)](#publishing-not-done-yet)
 * [Resources](#resources)
 
 ## What you need
@@ -58,9 +60,9 @@ Starts the workflow when one of these events happens in Deskwoot:
 
 Each event arrives as one item with plain fields. A conversation comes with its ID, number, link, status, subject, channel, inbox, assignee, team, labels, the customer's name, email address and phone number, and the customer's first message. Every item also says which event it is (`trigger`), when it happened (`occurredAt`) and, when an AI agent set it off, which one (`actorType`, `actorName`).
 
-**How it works.** When you publish the workflow, the node subscribes its Production URL to the event in Deskwoot. When you unpublish the workflow, the node removes that subscription again. While you test the trigger in the editor, n8n subscribes its Test URL for a short time. Then create a real event in Deskwoot, for example by writing to one of your inboxes.
+**How it works.** When you publish the workflow, the node subscribes its Production URL to the event in Deskwoot. When you unpublish the workflow, the node removes that subscription again. If Deskwoot cannot be reached at that moment or refuses the removal, the node keeps the subscription and uses it again the next time you publish. While you test the trigger in the editor, n8n subscribes its Test URL for a short time. Then create a real event in Deskwoot, for example by writing to one of your inboxes.
 
-**Every event is checked.** Deskwoot signs each event with a secret that it hands to the node only when the node subscribes. The node checks that signature and answers 401 to any request without a valid one, so nobody else can start your workflow through its URL.
+**Every event is checked.** Deskwoot signs each event: the header `X-Deskwoot-Signature` holds `sha256=` followed by the HMAC SHA256 of the raw request body, made with a secret that Deskwoot hands to the node only when the node subscribes. The node checks that signature and answers 401 to any request without a valid one, so nobody else can start your workflow through its URL.
 
 **Good to know:**
 
@@ -85,13 +87,22 @@ Each event arrives as one item with plain fields. A conversation comes with its 
 
 Take the conversation ID from the Deskwoot Trigger, for example. The node also works as a tool for n8n's AI agents.
 
+## Example workflow
+
+A private note on every new customer message:
+
+1. Add a **Deskwoot Trigger**, pick your **Deskwoot API** credential and set **Event** to **Customer Message Received**.
+2. Add a **Deskwoot** node after it. Set **Resource** to **Conversation** and **Operation** to **Add Private Note**.
+3. Set **Conversation ID** to `{{ $json.conversationId }}`. Write the **Note**, for example `Checked by n8n for {{ $json.contactEmail }}`, or use the result of a step in between, such as an order lookup in your shop.
+4. Publish the workflow. From now on, each message a customer writes gets a note that only your team sees.
+
 ## Without the Enterprise plan: webhooks
 
 On the Startup, Business and Enterprise plans, and during the trial, Deskwoot can send events to n8n's own **Webhook** node. The free Hacker plan sends no webhooks. This way only sends events out of Deskwoot: to change something in Deskwoot from n8n, you need the Deskwoot node and the Enterprise plan.
 
 1. In n8n, add a **Webhook** node, set **HTTP Method** to **POST** and copy its **Production URL**.
 2. Publish the workflow. n8n only listens on the Production URL while the workflow is published.
-3. In Deskwoot, go to **Settings > Webhooks** (administrators only) and click **Add Webhook**. Paste the URL under **Endpoint URL**, tick the events you want under **Subscribe to Events** (with none ticked, the webhook gets every event) and click **Create Webhook**.
+3. In Deskwoot, go to **Settings > Webhooks** (administrators only) and click **Add Webhook**. Paste the URL under **Endpoint URL**, tick the events you want under **Subscribe to Events** (with none ticked, the webhook gets every event except ticket events) and click **Create Webhook**.
 
 Each event arrives as JSON with the fields `event`, `data`, `timestamp` and `accountId`. Keep the Webhook node's **Respond** option on **Immediately**: Deskwoot waits 10 seconds at most for an answer.
 
@@ -109,6 +120,10 @@ npm run build   # compiles to dist
 npm run lint    # n8n's lint rules for community nodes
 npm test        # every HTTP call in the tests is a fake
 ```
+
+## Publishing (not done yet)
+
+This package is not on npm yet. Publishing needs Deskwoot's npm account, a public GitHub repository named in the `repository` field of package.json, and a release through the GitHub Action in `.github/workflows/publish.yml`, which adds npm provenance. n8n Cloud offers the node only after n8n has verified it through its Creator Portal. The Deskwoot team keeps the exact steps in PUBLISH.md, which stays out of git.
 
 ## Resources
 
