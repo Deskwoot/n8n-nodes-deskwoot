@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 (2026-11-03)
+
+* The nodes call the Deskwoot REST API at its own address, https://api.deskwoot.com/v1. From 2026-11-06 on, deskwoot.com/api/v1 no longer takes API tokens, so update to this version before then. Your credentials stay as they are.
+
 ## 0.1.0 (2026-10-26)
 
 First version.

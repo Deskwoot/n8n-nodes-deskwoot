@@ -59,6 +59,14 @@ async function connection(ctx: DeskwootContext): Promise<{ base: string; account
 	return { base, accountId };
 }
 
+/**
+ * The REST API of a Deskwoot address: its own host api.deskwoot.com/v1 for
+ * deskwoot.com, <address>/api/v1 for any other Deskwoot (a test or local one).
+ */
+export function apiRoot(base: string): string {
+	return /^https?:\/\/(www\.)?deskwoot\.com$/i.test(base) ? 'https://api.deskwoot.com/v1' : `${base}/api/v1`;
+}
+
 /** A path inside the credential's workspace: /accounts/<accountId><path>. */
 export async function accountPath(ctx: DeskwootContext, path: string): Promise<string> {
 	const { accountId } = await connection(ctx);
@@ -77,10 +85,10 @@ export async function deskwootRequestFull(
 	qs?: IDataObject,
 ): Promise<DeskwootResponse> {
 	const { base } = await connection(ctx);
-	// The token only ever goes to the Deskwoot base URL of the credential.
+	// The token only ever goes to the Deskwoot API of the credential's base URL.
 	const options: IHttpRequestOptions = {
 		method,
-		url: `${base}/api/v1${path}`,
+		url: `${apiRoot(base)}${path}`,
 		headers: { Accept: 'application/json' },
 		json: true,
 		returnFullResponse: true,

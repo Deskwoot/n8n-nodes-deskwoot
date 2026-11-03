@@ -48,13 +48,16 @@ const testUrl = (credentials: IDataObject) =>
 describe('Deskwoot API credential', () => {
 	it('tests with the inbox list of the account, without trailing slashes', () => {
 		expect(testUrl({ baseUrl: 'https://deskwoot.com/', accountId: ' cm123 ', apiToken: 't' })).toBe(
-			'https://deskwoot.com/api/v1/accounts/cm123/inboxes',
+			'https://api.deskwoot.com/v1/accounts/cm123/inboxes',
+		);
+		expect(testUrl({ baseUrl: ' https://www.deskwoot.com ', accountId: 'cm123', apiToken: 't' })).toBe(
+			'https://api.deskwoot.com/v1/accounts/cm123/inboxes',
 		);
 		expect(
 			testUrl({ baseUrl: 'https://desk.example.com//', accountId: 'a/b', apiToken: 't' }),
 		).toBe('https://desk.example.com/api/v1/accounts/a%2Fb/inboxes');
 		expect(testUrl({ baseUrl: '', accountId: 'cm123', apiToken: 't' })).toBe(
-			'https://deskwoot.com/api/v1/accounts/cm123/inboxes',
+			'https://api.deskwoot.com/v1/accounts/cm123/inboxes',
 		);
 	});
 

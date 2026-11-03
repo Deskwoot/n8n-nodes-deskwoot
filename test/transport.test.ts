@@ -33,6 +33,16 @@ describe('deskwootRequest', () => {
 		expect(JSON.stringify(call.options.headers ?? {})).not.toContain('Authorization');
 	});
 
+	it('calls deskwoot.com at the API host api.deskwoot.com/v1', async () => {
+		const api = fakeApi({});
+		await deskwootRequest(
+			ctxWith(api, { baseUrl: 'https://deskwoot.com/', apiToken: 't', accountId: 'acc_1' }),
+			'GET',
+			'/me',
+		).catch(() => undefined);
+		expect(api.calls[0].url).toBe('https://api.deskwoot.com/v1/me');
+	});
+
 	it('falls back to deskwoot.com when the base URL is empty', async () => {
 		const api = fakeApi({});
 		await deskwootRequest(
@@ -40,7 +50,7 @@ describe('deskwootRequest', () => {
 			'GET',
 			'/me',
 		).catch(() => undefined);
-		expect(api.calls[0].url).toBe('https://deskwoot.com/api/v1/me');
+		expect(api.calls[0].url).toBe('https://api.deskwoot.com/v1/me');
 	});
 
 	it('builds account paths with the account ID encoded and trimmed', async () => {

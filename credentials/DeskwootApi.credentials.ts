@@ -56,7 +56,7 @@ export class DeskwootApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL:
-				'={{String($credentials.baseUrl || "https://deskwoot.com").trim().replace(/\\/+$/, "")}}/api/v1',
+				'={{/^https?:\\/\\/(www\\.)?deskwoot\\.com\\/*$/i.test(String($credentials.baseUrl || "https://deskwoot.com").trim()) ? "https://api.deskwoot.com/v1" : String($credentials.baseUrl).trim().replace(/\\/+$/, "") + "/api/v1"}}',
 			url: '=/accounts/{{encodeURIComponent(String($credentials.accountId).trim())}}/inboxes',
 			method: 'GET',
 		},
